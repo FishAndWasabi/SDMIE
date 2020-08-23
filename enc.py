@@ -26,12 +26,13 @@ import base64
 import cv2
 import os
 import json
+
 warnings.filterwarnings('ignore')
 
 
 class DCE(object):
     def __init__(self, x0: float, y0: float, k: float, a: float = 36,
-                 b: float = 3, c: float = 28, d: float = 16, l: float = 0.2):
+                 b: float = 3, c: float = 28, d: float = 16, l: float = 0.2, n: int = 500):
         self.__x0 = x0
         self.__y0 = y0
         self.__k = k
@@ -40,6 +41,7 @@ class DCE(object):
         self.__c = c
         self.__d = d
         self.__l = l
+        self.__n = n
         self.__image = None
         self.__map = None
         self.__key = {}
@@ -50,7 +52,7 @@ class DCE(object):
         return self.__image
 
     def load_image(self, path):
-        assert os.path.exists(path) , "Image doesn't exit"
+        assert os.path.exists(path), "Image doesn't exit"
         self.__image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
         assert self.__image.shape > (0, 0), "Image doesn't exit"
         return
@@ -58,7 +60,8 @@ class DCE(object):
     @property
     def key(self):
         assert self.__key, "Encrypt First"
-        self.__key['params'] = [self.__x0, self.__y0, self.__k, self.__a, self.__b, self.__c, self.__d, self.__l]
+        self.__key['params'] = [self.__x0, self.__y0, self.__k, self.__a, self.__b, self.__c, self.__d, self.__l,
+                                self.__n]
         return base64.b64encode(json.dumps(self.__key).encode())
 
     @property
@@ -143,17 +146,17 @@ class DCE(object):
         x, y, z = self.__x0, self.__y0, self.__k + 0.4
         # Taylor-Chirikov map
         xn = x
-        for _ in range(500):
+        for _ in range(self.__n):
             xn = x
             x = (x + self.__k * np.math.sin(y)) / 2
             y = (y + np.mod(x, 2 * np.math.pi)) - 0.4
         # Chen's hyper chaotic map
         t = np.arange(x, self.__l * max(self.image.shape) - x, self.__l)
         # Use odeint to solve chen
-        map_ = odeint(chen, (x,y,z), t, args=([self.__a,self.__b,self.__c,self.__d,xn],))
+        map_ = odeint(chen, (x, y, z), t, args=([self.__a, self.__b, self.__c, self.__d, xn],))
         # Get the index of sorted sequence which is used to suffle the digital image
         map_x, map_y = np.argsort(map_[:self.image.shape[0], 0]), np.argsort(map_[:self.image.shape[1], 1])
-        self.__map = map_x,map_y
+        self.__map = map_x, map_y
         return
 
 
@@ -163,4 +166,4 @@ if __name__ == "__main__":
     result = dce.encrypt()
     with open('test\\dec\\key', 'wb') as f:
         f.write(dce.key)
-    cv2.imwrite('test\\dec\\test_e.png',result)
+    cv2.imwrite('test\\dec\\test_e.png', result)

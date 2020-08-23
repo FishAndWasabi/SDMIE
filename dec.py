@@ -35,7 +35,7 @@ class DCD(object):
         assert os.path.exists(path), "Key doesn't exit"
         with open(path, 'rb') as f:
             self.__key = ast.literal_eval(base64.b64decode(f.read()).decode())
-        self.__x0, self.__y0, self.__k, self.__a, self.__b, self.__c, self.__d, self.__l = self.__key['params']
+        self.__x0, self.__y0, self.__k, self.__a, self.__b, self.__c, self.__d, self.__l,self.__n = self.__key['params']
         self.__image = None
         self.__map = None
 
@@ -61,7 +61,7 @@ class DCD(object):
 
     def decrypt(self):
         """
-        The inverse of
+        The inverse of encryption
         """
         if not self.__map:
             self._gen_map()
@@ -91,7 +91,7 @@ class DCD(object):
         x, y, z = self.__x0, self.__y0, self.__k + 0.4
         # Taylor-Chirikov map
         xn = x
-        for _ in range(500):
+        for _ in range(self.__n):
             xn = x
             x = (x + self.__k * np.math.sin(y)) / 2
             y = (y + np.mod(x, 2 * np.math.pi)) - 0.4
